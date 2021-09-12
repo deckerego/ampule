@@ -54,9 +54,6 @@ def _send_response(client, code, headers, data):
 
     headers["Server"] = "Ampule/0.0.1-alpha (CircuitPython)"
     headers["Connection"] = "close"
-    headers["Access-Control-Allow-Origin"] = '*'
-    headers["Access-Control-Allow-Methods"] = 'GET, POST'
-    headers["Access-Control-Allow-Headers"] = 'Origin, Accept, Content-Type, X-Requested-With, X-CSRF-Token'
 
     for k, v in headers.items():
         response += "%s: %s\r\n" % (k, v)
