@@ -98,6 +98,7 @@ def listen(socket):
             args, route = match
             status, headers, body = route["func"](request, *args)
             _send_response(client, status, headers, body)
+    client.close()
 
 def route(rule):
     return lambda func: _on_request(rule, func)
