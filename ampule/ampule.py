@@ -57,15 +57,12 @@ def _send_response(client, code, headers, data):
     headers["Access-Control-Allow-Origin"] = '*'
     headers["Access-Control-Allow-Methods"] = 'GET, POST'
     headers["Access-Control-Allow-Headers"] = 'Origin, Accept, Content-Type, X-Requested-With, X-CSRF-Token'
+
     for k, v in headers.items():
         response += "%s: %s\r\n" % (k, v)
-
-    response += "\r\n"
-    response += str(data, "utf-8")
-    response += "\r\n"
+    response += "\r\n%s\r\n" % str(data, "utf-8")
 
     client.send(response)
-    client.close()
 
 def _on_request(rule, request_handler):
     regex = "^"
