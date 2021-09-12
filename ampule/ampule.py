@@ -52,8 +52,8 @@ def _read_request(client):
 def _send_response(client, code, headers, data):
     response = "HTTP/1.1 %i\r\n" % code
 
-    headers["Server"] = "ESP32Server"
-    headers["Connection"] = "Close"
+    headers["Server"] = "Ampule/0.0.1-alpha (CircuitPython)"
+    headers["Connection"] = "close"
     headers["Access-Control-Allow-Origin"] = '*'
     headers["Access-Control-Allow-Methods"] = 'GET, POST'
     headers["Access-Control-Allow-Headers"] = 'Origin, Accept, Content-Type, X-Requested-With, X-CSRF-Token'
