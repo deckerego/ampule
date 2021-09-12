@@ -64,7 +64,6 @@ def _send_response(client, code, headers, data):
     response += str(data, "utf-8")
     response += "\r\n"
 
-    print("Response:", response)
     client.send(response)
     client.close()
 
