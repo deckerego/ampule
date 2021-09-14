@@ -52,11 +52,11 @@ def _read_request(client):
 def _send_response(client, code, headers, data):
     headers["Server"] = "Ampule/0.0.1-alpha (CircuitPython)"
     headers["Connection"] = "close"
-    
-    response = "HTTP/1.1 %i\r\n" % code
+
+    response = "HTTP/1.1 %i OK\r\n" % code
     for k, v in headers.items():
         response += "%s: %s\r\n" % (k, v)
-    response += "\r\n%s\r\n" % str(data, "utf-8")
+    response += "\r\n%s\r\n" % data
 
     client.send(response)
 
@@ -83,14 +83,22 @@ def _match_route(path):
 
 def listen(socket):
     client, remote_address = socket.accept()
-    request = _read_request(client)
-    if request:
-        (method, path, params, headers, data) = request
-        match = _match_route(path)
-        if match:
-            args, route = match
-            status, headers, body = route["func"](request, *args)
-            _send_response(client, status, headers, body)
+    try:
+        client.settimeout(30)
+        request = _read_request(client)
+        if request:
+            (method, path, params, headers, data) = request
+            match = _match_route(path)
+            if match:
+                args, route = match
+                status, headers, body = route["func"](request, *args)
+                _send_response(client, status, headers, body)
+            else:
+                _send_response(client, 404, {}, "Not found")
+        else:
+            _send_response(client, 400, {}, "Invalid request")
+    except:
+        _send_response(client, 500, {}, "Error processing request")
     client.close()
 
 def route(rule):

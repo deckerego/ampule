@@ -1,23 +1,16 @@
-from setuptools import setup, find_packages
-
-from codecs import open
-from os import path
-
-here = path.abspath(path.dirname(__file__))
-
-with open(path.join(here, "README.md"), encoding="utf-8") as f:
-    long_description = f.read()
+from setuptools import setup
 
 setup(
     name="circuitpython-ampule",
     use_scm_version=True,
     setup_requires=["setuptools_scm"],
     description="CircuitPython framework for building simple web applications",
-    long_description=long_description,
+    long_description="CircuitPython framework for building simple web applications",
     long_description_content_type="text/markdown",
     url="https://github.com/deckerego/ampule",
     author="DeckerEgo",
     author_email="john@deckerego.net",
+    py_modules=["ampule"],
     install_requires=[],
     license="MIT",
     classifiers=[
@@ -31,5 +24,4 @@ setup(
         "Programming Language :: Python :: 3.5",
     ],
     keywords="adafruit circuitpython micropython web server webserver app webapp framework http https bottle",
-    py_modules=["ampule"],
 )
