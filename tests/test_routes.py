@@ -15,11 +15,11 @@ def test_socket_error():
     socket.send.assert_called_once_with((HEADER % 500) + "Error processing request\r\n")
     socket.close.assert_called_once()
 
-def test_bad_request():
+def test_empty_request():
     socket = mocket.Mocket("GET /bad HTTP/1.1".encode("utf-8"))
     socket.recv_into = mock.Mock(side_effect=OSError('ReceiveInto'))
     ampule.listen(socket)
-    socket.send.assert_called_once_with((HEADER % 400) + "Invalid request\r\n")
+    socket.send.assert_called_once_with((HEADER % 204) + "\r\n")
     socket.close.assert_called_once()
 
 def test_miss_get():

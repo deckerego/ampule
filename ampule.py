@@ -96,7 +96,7 @@ def listen(socket):
             else:
                 _send_response(client, 404, {}, "Not found")
         else:
-            _send_response(client, 400, {}, "Invalid request")
+            _send_response(client, 204, {}, "")
     except:
         _send_response(client, 500, {}, "Error processing request")
     client.close()
