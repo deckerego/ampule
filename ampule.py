@@ -52,7 +52,7 @@ def _read_request(client):
 def _send_response(client, code, headers, data):
     headers["Server"] = "Ampule/0.0.1-alpha (CircuitPython)"
     headers["Connection"] = "close"
-    
+
     response = "HTTP/1.1 %i\r\n" % code
     for k, v in headers.items():
         response += "%s: %s\r\n" % (k, v)
@@ -83,6 +83,7 @@ def _match_route(path):
 
 def listen(socket):
     client, remote_address = socket.accept()
+    client.settimeout(30)
     request = _read_request(client)
     if request:
         (method, path, params, headers, data) = request
