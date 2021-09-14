@@ -1,25 +1,28 @@
-import pytest
-import json
 import mocket
+from unittest import mock
 import ampule
 
-IP = "1.2.3.4"
-HOST = "httpbin.org"
-RESPONSE = { }
-ENCODED = json.dumps(RESPONSE).encode("utf-8")
-HEADERS = (
-    (
-        "HTTP/1.0 200 OK\r\n\r\n"
-        "Content-Type: application/json\r\nContent-Length: {}\r\n\r\n"
-    )
-    .format(len(ENCODED))
-    .encode("utf-8")
-)
+HEADER = "HTTP/1.1 %i OK\r\nServer: Ampule/0.0.1-alpha (CircuitPython)\r\nConnection: close\r\n\r\n"
 
-@ampule.route("/test/get")
+@ampule.route("/test")
 def simple_get_route(request):
     return (200, {}, "GET RESPONSE")
 
-def test_url_get():
-    socket = mocket.Mocket(HEADERS + ENCODED)
+def test_bad_get():
+    socket = mocket.Mocket("GET /bad HTTP/1.1".encode("utf-8"))
+    socket.recv_into = mock.Mock(side_effect=OSError('Nope'))
     ampule.listen(socket)
+    socket.send.assert_called_once_with((HEADER % 400) + "Invalid request\r\n")
+    socket.close.assert_called_once()
+
+def test_miss_get():
+    socket = mocket.Mocket("GET /nothing HTTP/1.1".encode("utf-8"))
+    ampule.listen(socket)
+    socket.send.assert_called_once_with((HEADER % 404) + "Not found\r\n")
+    socket.close.assert_called_once()
+
+def test_route_get():
+    socket = mocket.Mocket("GET /test HTTP/1.1".encode("utf-8"))
+    ampule.listen(socket)
+    socket.send.assert_called_once_with((HEADER % 200) + "GET RESPONSE\r\n")
+    socket.close.assert_called_once()

@@ -21,7 +21,7 @@ class MocketPool:
 class Mocket:
     """ Mock Socket """
 
-    def __init__(self, response):
+    def __init__(self, request):
         self.settimeout = mock.Mock()
         self.setblocking = mock.Mock()
         self.close = mock.Mock()
@@ -31,15 +31,12 @@ class Mocket:
         self.recv = mock.Mock(side_effect=self._recv)
         self.recv_into = mock.Mock(side_effect=self._recv_into)
         self._position = 0
-        self._response = response
+        self._response = request
 
     def _accept(self):
-        return (Mocket(self._response), ('0.0.0.0', 0))
+        return (self, ('0.0.0.0', 0))
 
     def _send(self, data):
-        if self.fail_next_send:
-            self.fail_next_send = False
-            return 0
         return len(data)
 
     def _recv(self, count):

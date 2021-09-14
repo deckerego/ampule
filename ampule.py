@@ -53,10 +53,10 @@ def _send_response(client, code, headers, data):
     headers["Server"] = "Ampule/0.0.1-alpha (CircuitPython)"
     headers["Connection"] = "close"
 
-    response = "HTTP/1.1 %i\r\n" % code
+    response = "HTTP/1.1 %i OK\r\n" % code
     for k, v in headers.items():
         response += "%s: %s\r\n" % (k, v)
-    response += "\r\n%s\r\n" % str(data, "utf-8")
+    response += "\r\n%s\r\n" % data
 
     client.send(response)
 
@@ -92,6 +92,10 @@ def listen(socket):
             args, route = match
             status, headers, body = route["func"](request, *args)
             _send_response(client, status, headers, body)
+        else:
+            _send_response(client, 404, {}, "Not found")
+    else:
+        _send_response(client, 400, {}, "Invalid request")
     client.close()
 
 def route(rule):
