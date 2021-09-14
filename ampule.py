@@ -83,19 +83,22 @@ def _match_route(path):
 
 def listen(socket):
     client, remote_address = socket.accept()
-    client.settimeout(30)
-    request = _read_request(client)
-    if request:
-        (method, path, params, headers, data) = request
-        match = _match_route(path)
-        if match:
-            args, route = match
-            status, headers, body = route["func"](request, *args)
-            _send_response(client, status, headers, body)
+    try:
+        client.settimeout(30)
+        request = _read_request(client)
+        if request:
+            (method, path, params, headers, data) = request
+            match = _match_route(path)
+            if match:
+                args, route = match
+                status, headers, body = route["func"](request, *args)
+                _send_response(client, status, headers, body)
+            else:
+                _send_response(client, 404, {}, "Not found")
         else:
-            _send_response(client, 404, {}, "Not found")
-    else:
-        _send_response(client, 400, {}, "Invalid request")
+            _send_response(client, 400, {}, "Invalid request")
+    except:
+        _send_response(client, 500, {}, "Error processing request")
     client.close()
 
 def route(rule):
