@@ -60,7 +60,7 @@ def _send_response(client, code, headers, data):
 
     client.send(response)
 
-def _on_request(rule, request_handler):
+def _on_request(method, rule, request_handler):
     regex = "^"
     rule_parts = rule.split("/")
     for part in rule_parts:
@@ -71,13 +71,13 @@ def _on_request(rule, request_handler):
             regex += part + r"\/"
     regex += "?$"
     routes.append(
-        (re.compile(regex), {"func": request_handler})
+        (re.compile(regex), {"method": method, "func": request_handler})
     )
 
-def _match_route(path):
+def _match_route(path, method):
     for matcher, route in routes:
         match = matcher.match(path)
-        if match:
+        if match and method == route["method"]:
             return (match.groups(), route)
     return None
 
@@ -88,7 +88,7 @@ def listen(socket):
         request = _read_request(client)
         if request:
             (method, path, params, headers, data) = request
-            match = _match_route(path)
+            match = _match_route(path, method)
             if match:
                 args, route = match
                 status, headers, body = route["func"](request, *args)
@@ -101,5 +101,5 @@ def listen(socket):
         _send_response(client, 500, {}, "Error processing request")
     client.close()
 
-def route(rule):
-    return lambda func: _on_request(rule, func)
+def route(rule, method='GET'):
+    return lambda func: _on_request(method, rule, func)
