@@ -1,7 +1,7 @@
 import io
 import re
 
-BUFFER_SIZE = 256
+BUFFER_SIZE = 128
 routes = []
 variable_re = re.compile("^<([a-zA-Z]+)>$")
 
@@ -28,33 +28,35 @@ class Request:
 def __parse_headers(reader):
     headers = {}
     for line in reader:
-        if line == '\r\n': break
-        title, content = line.split(":", 1)
+        if line == b'\r\n': break
+        title, content = str(line, "utf-8").split(":", 1)
         headers[title.strip().lower()] = content.strip()
     return headers
 
 def __parse_body(reader):
-    data = ""
+    data = bytearray()
     for line in reader:
-        if line == '\r\n': break
-        data += line
-    return data
+        if line == b'\r\n': break
+        data.extend(line)
+    return str(data, "utf-8")
 
 def __read_request(client):
+    message = bytearray()
+    client.setblocking(False)
+
     try:
-        request = ""
         while True:
-            client.setblocking(False)
             buffer = bytearray(BUFFER_SIZE)
             client.recv_into(buffer)
-            buffer = buffer.replace(b'\x00', b'')
-            if len(buffer) <= 0: break
-            request += buffer.decode("utf-8")
-        reader = io.StringIO(request)
-    except OSError:
-        return None
+            start_length = len(message)
+            for byte in buffer: # No replace in CircuitPython
+                if byte != 0x00: message.append(byte)
+            if start_length >= len(message): break # Nothing but 00's
+    except OSError as error:
+        print("Error reading from socket", error)
 
-    line = reader.readline()
+    reader = io.BytesIO(message)
+    line = str(reader.readline(), "utf-8")
     (method, full_path, version) = line.rstrip("\r\n").split(None, 2)
 
     request = Request(method, full_path)
@@ -104,17 +106,15 @@ def listen(socket):
     try:
         client.settimeout(30)
         request = __read_request(client)
-        if request:
-            match = __match_route(request.path, request.method)
-            if match:
-                args, route = match
-                status, headers, body = route["func"](request, *args)
-                __send_response(client, status, headers, body)
-            else:
-                __send_response(client, 404, {}, "Not found")
+        match = __match_route(request.path, request.method)
+        if match:
+            args, route = match
+            status, headers, body = route["func"](request, *args)
+            __send_response(client, status, headers, body)
         else:
-            __send_response(client, 204, {}, "")
-    except:
+            __send_response(client, 404, {}, "Not found")
+    except BaseException as e:
+        print("Error with request:", e)
         __send_response(client, 500, {}, "Error processing request")
     client.close()
 
