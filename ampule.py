@@ -27,17 +27,16 @@ class Request:
 def __parse_headers(reader):
     headers = {}
     for line in reader:
-        if line == b'\r\n': break
-        header = str(line, "utf-8")
-        title, content = header.split(":", 1)
+        if line == '\r\n': break
+        title, content = line.split(":", 1)
         headers[title.strip().lower()] = content.strip()
     return headers
 
 def __parse_body(reader):
     data = ""
     for line in reader:
-        if line == b'\r\n': break
-        data += str(line, "utf-8")
+        if line == '\r\n': break
+        data += line
     return data
 
 def __read_request(client):
@@ -45,11 +44,15 @@ def __read_request(client):
         client.setblocking(False)
         buffer = bytearray(1024)
         client.recv_into(buffer)
-        reader = io.BytesIO(buffer)
+        buffer_string = buffer.decode("utf-8")
+        print("Buffer: %s" % buffer_string)
+        reader = io.StringIO(buffer_string)
+        print("Got the reader!")
     except OSError:
         return None
 
-    line = str(reader.readline(), "utf-8")
+    line = reader.readline()
+    print("Line: %s" % line)
     (method, full_path, version) = line.rstrip("\r\n").split(None, 2)
 
     request = Request(method, full_path)
