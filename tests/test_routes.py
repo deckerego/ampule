@@ -1,8 +1,7 @@
 import mocket
 from unittest import mock
 import ampule
-
-HEADER = "HTTP/1.1 %i OK\r\nServer: Ampule/0.0.1-alpha (CircuitPython)\r\nConnection: close\r\n\r\n"
+import http_helper
 
 @ampule.route("/default")
 def simple_get_route(request):
@@ -23,23 +22,23 @@ def simple_get_route(request):
 def test_miss_default():
     socket = mocket.Mocket("GET /nothing HTTP/1.1".encode("utf-8"))
     ampule.listen(socket)
-    socket.send.assert_called_once_with((HEADER % 404) + "Not found\r\n")
+    socket.send.assert_called_once_with(http_helper.expected_response(404, "Not found"))
     socket.close.assert_called_once()
 
 def test_route_default():
     socket = mocket.Mocket("GET /default HTTP/1.1".encode("utf-8"))
     ampule.listen(socket)
-    socket.send.assert_called_once_with((HEADER % 200) + "DEFAULT RESPONSE\r\n")
+    socket.send.assert_called_once_with(http_helper.expected_response(200, "DEFAULT RESPONSE"))
     socket.close.assert_called_once()
 
 def test_route_get():
     socket = mocket.Mocket("GET /get HTTP/1.1".encode("utf-8"))
     ampule.listen(socket)
-    socket.send.assert_called_once_with((HEADER % 200) + "GET RESPONSE\r\n")
+    socket.send.assert_called_once_with(http_helper.expected_response(200, "GET RESPONSE"))
     socket.close.assert_called_once()
 
 def test_route_post():
     socket = mocket.Mocket("POST /post HTTP/1.1".encode("utf-8"))
     ampule.listen(socket)
-    socket.send.assert_called_once_with((HEADER % 200) + "POST RESPONSE\r\n")
+    socket.send.assert_called_once_with(http_helper.expected_response(200, "POST RESPONSE"))
     socket.close.assert_called_once()
