@@ -4,7 +4,27 @@ import re
 routes = []
 variable_re = re.compile("^<([a-zA-Z]+)>$")
 
-def _parse_headers(reader):
+class Request:
+    def __init__(self, method, full_path):
+        self.method = method
+        self.path = full_path.split("?")[0]
+        self.params = Request.__parse_params(full_path)
+        self.headers = {}
+        self.body = None
+
+    @staticmethod
+    def __parse_params(path):
+        query_string = path.split("?")[1] if "?" in path else ""
+        param_list = query_string.split("&")
+        params = {}
+        for param in param_list:
+            key_val = param.split("=")
+            if len(key_val) == 2:
+                params[key_val[0]] = key_val[1]
+        return params
+
+
+def __parse_headers(reader):
     headers = {}
     for line in reader:
         if line == b'\r\n': break
@@ -13,24 +33,14 @@ def _parse_headers(reader):
         headers[title.strip().lower()] = content.strip()
     return headers
 
-def _parse_params(path):
-    query_string = path.split("?")[1] if "?" in path else ""
-    param_list = query_string.split("&")
-    params = {}
-    for param in param_list:
-        key_val = param.split("=")
-        if len(key_val) == 2:
-            params[key_val[0]] = key_val[1]
-    return params
-
-def _parse_body(reader):
+def __parse_body(reader):
     data = ""
     for line in reader:
         if line == b'\r\n': break
         data += str(line, "utf-8")
     return data
 
-def _read_request(client):
+def __read_request(client):
     try:
         client.setblocking(False)
         buffer = bytearray(1024)
@@ -42,14 +52,13 @@ def _read_request(client):
     line = str(reader.readline(), "utf-8")
     (method, full_path, version) = line.rstrip("\r\n").split(None, 2)
 
-    path = full_path.split("?")[0]
-    params = _parse_params(full_path)
-    headers = _parse_headers(reader)
-    data = _parse_body(reader)
+    request = Request(method, full_path)
+    request.headers = __parse_headers(reader)
+    request.body = __parse_body(reader)
 
-    return (method, path, params, headers, data)
+    return request
 
-def _send_response(client, code, headers, data):
+def __send_response(client, code, headers, data):
     headers["Server"] = "Ampule/0.0.1-alpha (CircuitPython)"
     headers["Connection"] = "close"
 
@@ -60,21 +69,24 @@ def _send_response(client, code, headers, data):
 
     client.send(response)
 
-def _on_request(method, rule, request_handler):
+def __on_request(method, rule, request_handler):
     regex = "^"
     rule_parts = rule.split("/")
     for part in rule_parts:
+        # Is this portion of the path a variable?
         var = variable_re.match(part)
         if var:
+            # If so, allow any alphanumeric value
             regex += r"([a-zA-Z0-9_-]+)\/"
         else:
+            # Otherwise exact match
             regex += part + r"\/"
     regex += "?$"
     routes.append(
         (re.compile(regex), {"method": method, "func": request_handler})
     )
 
-def _match_route(path, method):
+def __match_route(path, method):
     for matcher, route in routes:
         match = matcher.match(path)
         if match and method == route["method"]:
@@ -85,21 +97,20 @@ def listen(socket):
     client, remote_address = socket.accept()
     try:
         client.settimeout(30)
-        request = _read_request(client)
+        request = __read_request(client)
         if request:
-            (method, path, params, headers, data) = request
-            match = _match_route(path, method)
+            match = __match_route(request.path, request.method)
             if match:
                 args, route = match
                 status, headers, body = route["func"](request, *args)
-                _send_response(client, status, headers, body)
+                __send_response(client, status, headers, body)
             else:
-                _send_response(client, 404, {}, "Not found")
+                __send_response(client, 404, {}, "Not found")
         else:
-            _send_response(client, 204, {}, "")
+            __send_response(client, 204, {}, "")
     except:
-        _send_response(client, 500, {}, "Error processing request")
+        __send_response(client, 500, {}, "Error processing request")
     client.close()
 
 def route(rule, method='GET'):
-    return lambda func: _on_request(method, rule, func)
+    return lambda func: __on_request(method, rule, func)
