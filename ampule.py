@@ -1,6 +1,7 @@
 import io
 import re
 
+BUFFER_SIZE = 256
 routes = []
 variable_re = re.compile("^<([a-zA-Z]+)>$")
 
@@ -41,18 +42,19 @@ def __parse_body(reader):
 
 def __read_request(client):
     try:
-        client.setblocking(False)
-        buffer = bytearray(1024)
-        client.recv_into(buffer)
-        buffer_string = buffer.decode("utf-8")
-        print("Buffer: %s" % buffer_string)
-        reader = io.StringIO(buffer_string)
-        print("Got the reader!")
+        request = ""
+        while True:
+            client.setblocking(False)
+            buffer = bytearray(BUFFER_SIZE)
+            client.recv_into(buffer)
+            buffer = buffer.replace(b'\x00', b'')
+            if len(buffer) <= 0: break
+            request += buffer.decode("utf-8")
+        reader = io.StringIO(request)
     except OSError:
         return None
 
     line = reader.readline()
-    print("Line: %s" % line)
     (method, full_path, version) = line.rstrip("\r\n").split(None, 2)
 
     request = Request(method, full_path)
@@ -64,11 +66,12 @@ def __read_request(client):
 def __send_response(client, code, headers, data):
     headers["Server"] = "Ampule/0.0.1-alpha (CircuitPython)"
     headers["Connection"] = "close"
+    headers["Content-Length"] = len(data)
 
     response = "HTTP/1.1 %i OK\r\n" % code
     for k, v in headers.items():
         response += "%s: %s\r\n" % (k, v)
-    response += "\r\n%s\r\n" % data
+    response += "\r\n" + data + "\r\n"
 
     client.send(response)
 

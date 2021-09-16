@@ -1,8 +1,7 @@
 import mocket
 from unittest import mock
 import ampule
-
-HEADER = "HTTP/1.1 %i OK\r\nServer: Ampule/0.0.1-alpha (CircuitPython)\r\nConnection: close\r\n\r\n"
+import http_helper
 
 @ampule.route("/var/<cheeses>")
 def trailing_variable(request, cheeses):
@@ -19,23 +18,23 @@ def embedded_variable(request, rocks, cheeses):
 def test_trailing_var():
     socket = mocket.Mocket("GET /var/gouda HTTP/1.1".encode("utf-8"))
     ampule.listen(socket)
-    socket.send.assert_called_once_with((HEADER % 200) + "RESPONSE: gouda\r\n")
+    socket.send.assert_called_once_with(http_helper.expected_response(200, "RESPONSE: gouda"))
     socket.close.assert_called_once()
 
 def test_embedded_var():
     socket = mocket.Mocket("GET /var/quartz/update HTTP/1.1".encode("utf-8"))
     ampule.listen(socket)
-    socket.send.assert_called_once_with((HEADER % 200) + "RESPONSE: quartz\r\n")
+    socket.send.assert_called_once_with(http_helper.expected_response(200, "RESPONSE: quartz"))
     socket.close.assert_called_once()
 
 def test_missing_var():
     socket = mocket.Mocket("GET /var/ HTTP/1.1".encode("utf-8"))
     ampule.listen(socket)
-    socket.send.assert_called_once_with((HEADER % 404) + "Not found\r\n")
+    socket.send.assert_called_once_with(http_helper.expected_response(404, "Not found"))
     socket.close.assert_called_once()
 
 def test_double_var():
     socket = mocket.Mocket("GET /var/quartz/gouda HTTP/1.1".encode("utf-8"))
     ampule.listen(socket)
-    socket.send.assert_called_once_with((HEADER % 200) + "RESPONSE: gouda quartz\r\n")
+    socket.send.assert_called_once_with(http_helper.expected_response(200, "RESPONSE: gouda quartz"))
     socket.close.assert_called_once()
