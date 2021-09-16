@@ -1,7 +1,8 @@
 import io
 import re
 
-BUFFER_SIZE = 128
+BUFFER_SIZE = 256
+TIMEOUT = 30
 routes = []
 variable_re = re.compile("^<([a-zA-Z]+)>$")
 
@@ -42,16 +43,20 @@ def __parse_body(reader):
 
 def __read_request(client):
     message = bytearray()
-    client.setblocking(False)
+    client.settimeout(30)
+    socket_recv = True
 
     try:
-        while True:
+        while socket_recv:
             buffer = bytearray(BUFFER_SIZE)
             client.recv_into(buffer)
             start_length = len(message)
-            for byte in buffer: # No replace in CircuitPython
-                if byte != 0x00: message.append(byte)
-            if start_length >= len(message): break # Nothing but 00's
+            for byte in buffer:
+                if byte == 0x00:
+                    socket_recv = False
+                    break
+                else:
+                    message.append(byte)
     except OSError as error:
         print("Error reading from socket", error)
 
