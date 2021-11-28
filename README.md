@@ -78,7 +78,7 @@ Query parameters are passed along with the request. If a URL ends with
     @ampule.route("/hello/world")
     def light_set(request):
         name = request.params["name"]
-        return (200, {}, "Hi there %s!" % name}")
+        return (200, {}, "Hi there %s!" % name)
 
 ### Specifying HTTP Method on Routes
 
