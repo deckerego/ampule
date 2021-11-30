@@ -125,7 +125,7 @@ To build a MicroPython compiled library.
 
 ### Running tests
 
-Tests require pytest to be installed:
+Tests require pytest to be installed. Once installed it can be invoked with
+default arguments, as in:
 
-    pip3 install -e .
     pytest

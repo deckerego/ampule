@@ -75,12 +75,21 @@ def __send_response(client, code, headers, data):
     headers["Connection"] = "close"
     headers["Content-Length"] = len(data)
 
-    response = "HTTP/1.1 %i OK\r\n" % code
-    for k, v in headers.items():
-        response += "%s: %s\r\n" % (k, v)
-    response += "\r\n" + data + "\r\n"
+    with io.BytesIO() as response:
+        response.write(("HTTP/1.1 %i OK\r\n" % code).encode())
+        for k, v in headers.items():
+            response.write(("%s: %s\r\n" % (k, v)).encode())
 
-    client.send(response)
+        response.write(b"\r\n")
+        if(isinstance(data, str)):
+            response.write(data.encode())
+        else:
+            response.write(data)
+        response.write(b"\r\n")
+
+        response.flush()
+        response.seek(0)
+        client.send(response.read())
 
 def __on_request(method, rule, request_handler):
     regex = "^"
