@@ -80,7 +80,13 @@ def __send_response(client, code, headers, data):
         response += "%s: %s\r\n" % (k, v)
     response += "\r\n" + data + "\r\n"
 
-    client.send(response)
+    if len(response) > 2048:
+        idx = 0
+        while idx < len(response):
+            client.send(response[idx:(idx+2048)])
+            idx = idx + 2048
+    else:
+        client.send(response)
 
 def __on_request(method, rule, request_handler):
     regex = "^"
