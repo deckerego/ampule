@@ -106,10 +106,10 @@ def __match_route(path, method):
             return (match.groups(), route)
     return None
 
-def listen(socket):
+def listen(socket, timeout=30):
     client, remote_address = socket.accept()
     try:
-        client.settimeout(30)
+        client.settimeout(timeout)
         request = __read_request(client)
         match = __match_route(request.path, request.method)
         if match:
