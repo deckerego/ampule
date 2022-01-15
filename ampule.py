@@ -85,10 +85,9 @@ def __send_response(client, code, headers, data):
     bytes_sent_total = 0
     while True:
         try:
-            bytes_sent = client.send(response)
-            bytes_sent_total += bytes_sent
-            if bytes_sent_total == response_length:
-                break
+            bytes_sent_total += client.send(response)
+            if bytes_sent_total >= response_length:
+                return bytes_sent_total
             else:
                 response = response[bytes_sent:]
                 continue
@@ -96,7 +95,7 @@ def __send_response(client, code, headers, data):
             if e.errno == 11:       # EAGAIN: no bytes have been transfered
                 continue
             else:
-                break
+                return bytes_sent_total
 
 def __on_request(method, rule, request_handler):
     regex = "^"
