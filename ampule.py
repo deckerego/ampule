@@ -89,7 +89,24 @@ def __send_response(client, code, headers, data):
 
         response.flush()
         response.seek(0)
-        client.send(response.read())
+        response_buffer = response.read()
+
+        # unreliable sockets on ESP32-S2: see https://github.com/adafruit/circuitpython/issues/4420#issuecomment-814695753
+        response_length = len(response_buffer)
+        bytes_sent_total = 0
+        while True:
+            try:
+                bytes_sent_total += client.send(response_buffer)
+                if bytes_sent_total >= response_length:
+                    return bytes_sent_total
+                else:
+                    response_buffer = response_buffer[bytes_sent:]
+                    continue
+            except OSError as e:
+                if e.errno == 11:       # EAGAIN: no bytes have been transfered
+                    continue
+                else:
+                    return bytes_sent_total
 
 def __on_request(method, rule, request_handler):
     regex = "^"
@@ -115,10 +132,10 @@ def __match_route(path, method):
             return (match.groups(), route)
     return None
 
-def listen(socket):
+def listen(socket, timeout=30):
     client, remote_address = socket.accept()
     try:
-        client.settimeout(30)
+        client.settimeout(timeout)
         request = __read_request(client)
         match = __match_route(request.path, request.method)
         if match:
