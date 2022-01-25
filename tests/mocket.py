@@ -31,13 +31,20 @@ class Mocket:
         self.recv = mock.Mock(side_effect=self._recv)
         self.recv_into = mock.Mock(side_effect=self._recv_into)
         self._position = 0
+        self._maxsize = 256
         self._response = request
 
     def _accept(self):
         return (self, ('0.0.0.0', 0))
 
+    # This implementation of send only sends along
+    # _maxsize_ bytes at a time to replicate the behavior
+    # of some socket implementations (like the ESP32-S2)
     def _send(self, data):
-        return len(data)
+        if len(data) > self._maxsize:
+            return self._maxsize
+        else:
+            return len(data)
 
     def _recv(self, count):
         end = self._position + count

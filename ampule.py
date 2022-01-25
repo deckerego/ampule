@@ -96,7 +96,8 @@ def __send_response(client, code, headers, data):
         bytes_sent_total = 0
         while True:
             try:
-                bytes_sent_total += client.send(response_buffer)
+                bytes_sent = client.send(response_buffer)
+                bytes_sent_total += bytes_sent
                 if bytes_sent_total >= response_length:
                     return bytes_sent_total
                 else:
