@@ -75,27 +75,38 @@ def __send_response(client, code, headers, data):
     headers["Connection"] = "close"
     headers["Content-Length"] = len(data)
 
-    response = "HTTP/1.1 %i OK\r\n" % code
-    for k, v in headers.items():
-        response += "%s: %s\r\n" % (k, v)
-    response += "\r\n" + data + "\r\n"
+    with io.BytesIO() as response:
+        response.write(("HTTP/1.1 %i OK\r\n" % code).encode())
+        for k, v in headers.items():
+            response.write(("%s: %s\r\n" % (k, v)).encode())
 
-    # unreliable sockets on ESP32-S2: see https://github.com/adafruit/circuitpython/issues/4420#issuecomment-814695753
-    response_length = len(response)
-    bytes_sent_total = 0
-    while True:
-        try:
-            bytes_sent_total += client.send(response)
-            if bytes_sent_total >= response_length:
-                return bytes_sent_total
-            else:
-                response = response[bytes_sent:]
-                continue
-        except OSError as e:
-            if e.errno == 11:       # EAGAIN: no bytes have been transfered
-                continue
-            else:
-                return bytes_sent_total
+        response.write(b"\r\n")
+        if(isinstance(data, str)):
+            response.write(data.encode())
+        else:
+            response.write(data)
+        response.write(b"\r\n")
+
+        response.flush()
+        response.seek(0)
+        response_buffer = response.read()
+
+        # unreliable sockets on ESP32-S2: see https://github.com/adafruit/circuitpython/issues/4420#issuecomment-814695753
+        response_length = len(response_buffer)
+        bytes_sent_total = 0
+        while True:
+            try:
+                bytes_sent_total += client.send(response_buffer)
+                if bytes_sent_total >= response_length:
+                    return bytes_sent_total
+                else:
+                    response_buffer = response_buffer[bytes_sent:]
+                    continue
+            except OSError as e:
+                if e.errno == 11:       # EAGAIN: no bytes have been transfered
+                    continue
+                else:
+                    return bytes_sent_total
 
 def __on_request(method, rule, request_handler):
     regex = "^"
