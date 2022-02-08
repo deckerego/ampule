@@ -125,7 +125,10 @@ To build a MicroPython compiled library.
 
 ### Running tests
 
-Tests require pytest to be installed. Once installed it can be invoked with
-default arguments, as in:
+Tests require pytest to be installed along with a local version of Ampule, as in:
+
+    pip3 install -e .
+
+Once installed pytest can be invoked with default arguments, as in:
 
     pytest
