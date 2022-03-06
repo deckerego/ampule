@@ -16,14 +16,14 @@ headers = {
 }
 
 @ampule.route("/on")
-def light_set(request):
+def light_on(request):
     led.value = True
-    return (200, headers, '{"enabled": true}'}")
+    return (200, headers, '{"enabled": true}')
 
 @ampule.route("/off")
-def light_status(request):
+def light_off(request):
     led.value = False
-    return (200, headers, '{"enabled": false}'}")
+    return (200, headers, '{"enabled": false}')
 
 try:
     from secrets import secrets
