@@ -16,14 +16,14 @@ headers = {
 }
 
 @ampule.route("/on")
-def light_set(request):
+def light_on(request):
     led.value = True
-    return (200, headers, '{"enabled": true}'}")
+    return (200, headers, '{"enabled": true}')
 
 @ampule.route("/off")
-def light_status(request):
+def light_off(request):
     led.value = False
-    return (200, headers, '{"enabled": false}'}")
+    return (200, headers, '{"enabled": false}')
 
 try:
     from secrets import secrets
@@ -32,8 +32,7 @@ except ImportError:
     raise
 
 try:
-    print("Connecting to %s..." % secrets["ssid"])
-    print("MAC: ", [hex(i) for i in wifi.radio.mac_address])
+    print("Connecting to {}...".format(secrets["ssid"]))
     wifi.radio.connect(secrets["ssid"], secrets["password"])
 except:
     print("Error connecting to WiFi")
@@ -43,7 +42,7 @@ pool = socketpool.SocketPool(wifi.radio)
 socket = pool.socket()
 socket.bind(['0.0.0.0', 80])
 socket.listen(1)
-print("Connected to %s, IPv4 Addr: " % secrets["ssid"], wifi.radio.ipv4_address)
+print("Connected to {}, Web server running on http://{}:80".format(secrets["ssid"], wifi.radio.ipv4_address))
 
 while True:
     ampule.listen(socket)
