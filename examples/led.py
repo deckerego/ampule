@@ -32,7 +32,8 @@ except ImportError:
     raise
 
 try:
-    print("Connecting to {}...".format(secrets["ssid"]))
+    print("Connecting to %s..." % secrets["ssid"])
+    print("MAC: ", [hex(i) for i in wifi.radio.mac_address])
     wifi.radio.connect(secrets["ssid"], secrets["password"])
 except:
     print("Error connecting to WiFi")
@@ -42,7 +43,7 @@ pool = socketpool.SocketPool(wifi.radio)
 socket = pool.socket()
 socket.bind(['0.0.0.0', 80])
 socket.listen(1)
-print("Connected to {}, Web server running on http://{}:80".format(secrets["ssid"], wifi.radio.ipv4_address))
+print("Connected to %s, IPv4 Addr: " % secrets["ssid"], wifi.radio.ipv4_address)
 
 while True:
     ampule.listen(socket)
