@@ -1,6 +1,8 @@
 import io
 import re
 
+from errno import EAGAIN, ECONNRESET
+
 BUFFER_SIZE = 256
 TIMEOUT = 30
 routes = []
@@ -137,6 +139,32 @@ def listen(socket, timeout=30):
     client, remote_address = socket.accept()
     try:
         client.settimeout(timeout)
+        request = __read_request(client)
+        match = __match_route(request.path, request.method)
+        if match:
+            args, route = match
+            status, headers, body = route["func"](request, *args)
+            __send_response(client, status, headers, body)
+        else:
+            __send_response(client, 404, {}, "Not found")
+    except BaseException as e:
+        print("Error with request:", e)
+        __send_response(client, 500, {}, "Error processing request")
+    client.close()
+
+def poll(socket):
+    try:
+        client, _ = socket.accept()
+    except OSError as ex:
+        # handle EAGAIN and ECONNRESET
+        if ex.errno == EAGAIN:
+            # there is no data available right now, try again later.
+            return
+        if ex.errno == ECONNRESET:
+            # connection reset by peer, try again later.
+            return
+        raise
+    try:
         request = __read_request(client)
         match = __match_route(request.path, request.method)
         if match:
