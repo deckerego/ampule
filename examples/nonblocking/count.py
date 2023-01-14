@@ -1,12 +1,9 @@
-import board
 import wifi
 import socketpool
+import time
 import ampule
-from digitalio import DigitalInOut, Direction
 
-led = DigitalInOut(board.LED)
-led.direction = Direction.OUTPUT
-led.value = False
+counter = 0
 
 headers = {
     "Content-Type": "application/json; charset=UTF-8",
@@ -15,15 +12,10 @@ headers = {
     "Access-Control-Allow-Headers": 'Origin, Accept, Content-Type, X-Requested-With, X-CSRF-Token'
 }
 
-@ampule.route("/on")
-def light_on(request):
-    led.value = True
-    return (200, headers, '{"enabled": true}')
-
-@ampule.route("/off")
-def light_off(request):
-    led.value = False
-    return (200, headers, '{"enabled": false}')
+@ampule.route("/status")
+def status(request):
+    global counter
+    return (200, headers, '{"counter": %d}' % counter)
 
 try:
     from secrets import secrets
@@ -43,8 +35,13 @@ pool = socketpool.SocketPool(wifi.radio)
 socket = pool.socket()
 socket.bind(['0.0.0.0', 80])
 socket.listen(1)
-socket.setblocking(True)
+socket.setblocking(False)
 print("Connected to %s, IPv4 Addr: " % secrets["ssid"], wifi.radio.ipv4_address)
 
 while True:
     ampule.listen(socket)
+    counter += 1
+    time.sleep(1.0)
+    print("Counter: ", counter)
+
+

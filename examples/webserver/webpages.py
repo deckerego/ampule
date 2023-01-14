@@ -88,6 +88,7 @@ pool = socketpool.SocketPool(wifi.radio)
 socket = pool.socket()
 socket.bind(['0.0.0.0', 80])
 socket.listen(1)
+socket.setblocking(True)
 print("Connected to {}, Web server running on http://{}:80".format(secrets["ssid"], wifi.radio.ipv4_address))
 
 while True:
