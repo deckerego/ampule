@@ -49,6 +49,7 @@ pool = socketpool.SocketPool(wifi.radio)
 socket = pool.socket()
 socket.bind(['0.0.0.0', 80])
 socket.listen(1)
+socket.setblocking(True)
 print("Connected to %s, IPv4 Addr: " % secrets["ssid"], wifi.radio.ipv4_address)
 
 while True:
@@ -56,7 +57,7 @@ while True:
 ```
 
 The majority of this code is CircuitPython boilerplate that connects to a WiFi
-network, listens on port 80, and connects ampule to the open socket.
+network, listens on port 80 in blocking mode, and connects ampule to the open socket.
 
 The line `@ampule.route("/hello/world")` registers the following function for
 the path specified, and responds with HTTP 200, no headers, and a response body

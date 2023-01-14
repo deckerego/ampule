@@ -4,7 +4,6 @@ import re
 from errno import EAGAIN, ECONNRESET
 
 BUFFER_SIZE = 256
-TIMEOUT = 30
 routes = []
 variable_re = re.compile("^<([a-zA-Z]+)>$")
 
@@ -45,14 +44,12 @@ def __parse_body(reader):
 
 def __read_request(client):
     message = bytearray()
-    client.settimeout(30)
     socket_recv = True
 
     try:
         while socket_recv:
             buffer = bytearray(BUFFER_SIZE)
             client.recv_into(buffer)
-            start_length = len(message)
             for byte in buffer:
                 if byte == 0x00:
                     socket_recv = False
@@ -64,7 +61,7 @@ def __read_request(client):
 
     reader = io.BytesIO(message)
     line = str(reader.readline(), "utf-8")
-    (method, full_path, version) = line.rstrip("\r\n").split(None, 2)
+    (method, full_path, _) = line.rstrip("\r\n").split(None, 2)
 
     request = Request(method, full_path)
     request.headers = __parse_headers(reader)
@@ -135,35 +132,15 @@ def __match_route(path, method):
             return (match.groups(), route)
     return None
 
-def listen(socket, timeout=30):
-    client, remote_address = socket.accept()
-    try:
-        client.settimeout(timeout)
-        request = __read_request(client)
-        match = __match_route(request.path, request.method)
-        if match:
-            args, route = match
-            status, headers, body = route["func"](request, *args)
-            __send_response(client, status, headers, body)
-        else:
-            __send_response(client, 404, {}, "Not found")
-    except BaseException as e:
-        print("Error with request:", e)
-        __send_response(client, 500, {}, "Error processing request")
-    client.close()
-
-def poll(socket):
+def listen(socket):
     try:
         client, _ = socket.accept()
-    except OSError as ex:
-        # handle EAGAIN and ECONNRESET
-        if ex.errno == EAGAIN:
-            # there is no data available right now, try again later.
-            return
-        if ex.errno == ECONNRESET:
-            # connection reset by peer, try again later.
-            return
-        raise
+    except OSError as e:
+        if e.errno == EAGAIN: return
+        if e.errno == ECONNRESET: return
+        print("OS Error with socket:", e)
+        raise e
+
     try:
         request = __read_request(client)
         match = __match_route(request.path, request.method)
